@@ -1,0 +1,64 @@
+body {
+    background: linear-gradient(135deg, #1a1a2e, #16213e);
+    color: #fff;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    margin: 0;
+    overflow: hidden;
+}
+
+.ui-container {
+    text-align: center;
+    margin-bottom: 20px;
+    z-index: 10;
+}
+
+h1 {
+    margin: 0;
+    font-size: 2.5rem;
+    letter-spacing: 2px;
+    text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+}
+
+.subtitle {
+    margin: 5px 0 20px;
+    color: #a0a0a0;
+    font-size: 0.9rem;
+}
+
+.score-box {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 10px 30px;
+    border-radius: 50px;
+    font-size: 1.5rem;
+    font-weight: bold;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(5px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+}
+
+.canvas-wrapper {
+    position: relative;
+    padding: 10px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 12px;
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+canvas {
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    cursor: pointer;
+    display: block;
+}
+
+.hint {
+    font-size: 0.8rem;
+    color: #666;
+    margin-top: 10px;
+}
