@@ -1,7 +1,17 @@
+/* Import Font yang lebih 'playful' dan modern */
+@import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&display=swap');
+
 body {
-    background: linear-gradient(135deg, #1a1a2e, #16213e);
+    /* PERUBAHAN BACKGROUND:
+       Diganti menjadi gradasi yang lebih "tajam" dan dingin.
+       - #e3ffff: Cyan yang sangat muda hampir putih (puncak es).
+       - #8ea5ff: Biru tengah yang lebih sejuk dan agak pucat.
+       - #050f2c: Biru dongker yang sangat gelap dan dalam (dasar beku).
+    */
+    background: radial-gradient(circle at top left, #e3ffff, #8ea5ff, #050f2c);
+    
     color: #fff;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: 'Fredoka', 'Segoe UI', sans-serif; /* Font tetap Fredoka */
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -9,56 +19,131 @@ body {
     height: 100vh;
     margin: 0;
     overflow: hidden;
+    
+    /* Pattern overlay tetap dipertahankan untuk tekstur */
+    background-image: 
+        radial-gradient(circle at top left, #e3ffff, #8ea5ff, #050f2c), /* Layer gradasi utama */
+        radial-gradient(circle at 10% 20%, rgba(255, 255, 255, 0.15) 0%, transparent 20%), /* Overlay pantulan 1 */
+        radial-gradient(circle at 90% 80%, rgba(255, 255, 255, 0.1) 0%, transparent 20%); /* Overlay pantulan 2 */
+    background-blend-mode: screen; /* Mode blend agar overlay menyatu */
 }
 
 .ui-container {
     text-align: center;
-    margin-bottom: 20px;
+    margin-bottom: 25px;
     z-index: 10;
+    position: relative;
 }
 
 h1 {
-    margin: 0;
-    font-size: 2.5rem;
+    margin: 0 0 15px 0;
+    font-size: 3rem;
     letter-spacing: 2px;
-    text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+    color: #fff;
+    /* Efek teks beku dengan outline biru muda */
+    text-shadow: 
+        0 0 10px rgba(0, 242, 255, 0.8),
+        2px 2px 0px #2a5298;
+    transform: rotate(-2deg); /* Sedikit miring biar fun */
 }
 
-.subtitle {
-    margin: 5px 0 20px;
-    color: #a0a0a0;
-    font-size: 0.9rem;
+/* Container untuk Score dan Timer */
+.stats-row {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
 }
 
+/* Kotak Score dengan Efek ES BATU (Glassmorphism) */
 .score-box {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.25); /* Transparan seperti es */
     padding: 10px 30px;
-    border-radius: 50px;
+    border-radius: 20px; /* Sudut membulat */
     font-size: 1.5rem;
-    font-weight: bold;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    backdrop-filter: blur(5px);
-    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    font-weight: 600;
+    color: #fff;
+    
+    /* Border putih tipis agar terlihat tebal */
+    border-top: 2px solid rgba(255, 255, 255, 0.5);
+    border-left: 2px solid rgba(255, 255, 255, 0.5);
+    border-right: 1px solid rgba(255, 255, 255, 0.2);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    
+    /* Efek Blur di belakang kotak */
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    
+    /* Bayangan lembut */
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.2);
+    
+    /* Animasi kecil saat hover */
+    transition: transform 0.2s ease;
 }
 
+.score-box:hover {
+    transform: translateY(-3px);
+    background: rgba(255, 255, 255, 0.35);
+}
+
+/* Warna spesifik untuk membedakan Score dan Time */
+.score-box span {
+    display: block;
+    font-size: 2rem;
+    color: #fff700; /* Warna Kuning Lemon Segar */
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+}
+
+#timer {
+    color: #ff6b6b; /* Warna Merah Strawberry */
+}
+
+/* Wadah Canvas (Papan Permainan) */
 .canvas-wrapper {
     position: relative;
-    padding: 10px;
-    background: rgba(0, 0, 0, 0.3);
-    border-radius: 12px;
-    box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 15px;
+    
+    /* Background papan seperti nampan kaca/es */
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 24px;
+    
+    /* Border tebal es */
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 
+        0 0 40px rgba(0, 242, 255, 0.2), /* Glow biru luar */
+        inset 0 0 20px rgba(255, 255, 255, 0.2); /* Glow dalam */
+        
+    backdrop-filter: blur(5px);
 }
 
 canvas {
-    background-color: rgba(0, 0, 0, 0.2);
-    border-radius: 8px;
+    background-color: rgba(0, 20, 40, 0.4); /* Gelap transparan di dalam grid */
+    border-radius: 16px;
     cursor: pointer;
     display: block;
+    box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
 }
 
 .hint {
-    font-size: 0.8rem;
-    color: #666;
-    margin-top: 10px;
+    font-size: 1rem;
+    color: #e0e0e0;
+    margin-top: 15px;
+    font-weight: normal;
+    background: rgba(0,0,0,0.2);
+    padding: 5px 15px;
+    border-radius: 50px;
+}
+
+/* Animasi untuk Game Over (jika ada class tambahan nanti) */
+@keyframes shake {
+  0% { transform: translate(1px, 1px) rotate(0deg); }
+  10% { transform: translate(-1px, -2px) rotate(-1deg); }
+  20% { transform: translate(-3px, 0px) rotate(1deg); }
+  30% { transform: translate(3px, 2px) rotate(0deg); }
+  40% { transform: translate(1px, -1px) rotate(1deg); }
+  50% { transform: translate(-1px, 2px) rotate(-1deg); }
+  60% { transform: translate(-3px, 1px) rotate(0deg); }
+  70% { transform: translate(3px, 1px) rotate(-1deg); }
+  80% { transform: translate(-1px, -1px) rotate(1deg); }
+  90% { transform: translate(1px, 2px) rotate(0deg); }
+  100% { transform: translate(1px, -2px) rotate(-1deg); }
 }
