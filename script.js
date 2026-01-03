@@ -1,6 +1,7 @@
 /**
  * TUGAS BESAR GRAFIKA KOMPUTER & PENGOLAHAN CITRA
  * Engine: HTML5 Canvas Custom Engine
+ * Fitur Utama: Texture Mapping & Geometric Transformation (Animation)
  */
 
 const canvas = document.getElementById('gameCanvas');
@@ -14,9 +15,20 @@ const CELL_SIZE = 64; // 512px / 8
 const ANIMATION_SPEED = 0.2; // Kecepatan Lerp (0.0 - 1.0)
 const GAME_DURATION = 60; // Durasi game dalam detik
 
-// Warna permata (digunakan untuk generate aset)
-const COLORS = ['#FF4136', '#2ECC40', '#0074D9', '#FFDC00', '#B10DC9', '#FF851B'];
-let assets = {}; // Menyimpan gambar sprite yang digenerate
+// [GRAFIKOM] TEXTURE MAPPING CONFIG
+// Menggantikan warna solid dengan file texture (Bitmap Assets)
+const TEXTURE_FILES = [
+    'img/gem0.png', 
+    'img/gem1.png', 
+    'img/gem2.png', 
+    'img/gem3.png', 
+    'img/gem4.png', 
+    'img/gem5.png'
+];
+
+// State Assets
+let textures = []; // Array untuk menyimpan objek Image yang sudah di-load
+let assetsLoaded = 0; // Counter loading
 
 // State Game
 let grid = []; // 2D Array
@@ -27,34 +39,25 @@ let isAnimating = false;
 let timeLeft = GAME_DURATION;
 let isGameOver = false;
 
-// --- [GRAFIKOM] PROCEDURAL ASSET GENERATION ---
-// Membuat sprite permata menggunakan kode (bukan load image)
-// Menunjukkan pemahaman tentang rendering shape dan gradient.
-function createGemAssets() {
-    COLORS.forEach((color, index) => {
-        const tempCanvas = document.createElement('canvas');
-        tempCanvas.width = CELL_SIZE;
-        tempCanvas.height = CELL_SIZE;
-        const tCtx = tempCanvas.getContext('2d');
-
-        // Gambar Lingkaran Dasar
-        const cx = CELL_SIZE / 2;
-        const cy = CELL_SIZE / 2;
-        const radius = CELL_SIZE / 2 - 4;
-
-        // Radial Gradient untuk efek 3D (Lighting)
-        const grad = tCtx.createRadialGradient(cx - 10, cy - 10, 5, cx, cy, radius);
-        grad.addColorStop(0, '#fff');   // Highlight
-        grad.addColorStop(0.3, color);  // Warna utama
-        grad.addColorStop(1, '#000');   // Shadow
-
-        tCtx.beginPath();
-        tCtx.arc(cx, cy, radius, 0, Math.PI * 2);
-        tCtx.fillStyle = grad;
-        tCtx.fill();
-        
-        // Simpan sebagai ImageBitmap/Pattern
-        assets[index] = tempCanvas;
+// --- [GRAFIKOM] ASSET LOADING SYSTEM ---
+// Fungsi ini memuat citra eksternal untuk digunakan sebagai Texture
+function loadTextures(callback) {
+    TEXTURE_FILES.forEach((src, index) => {
+        const img = new Image();
+        img.src = src;
+        img.onload = () => {
+            assetsLoaded++;
+            // Pastikan semua texture ter-load sebelum game mulai
+            if (assetsLoaded === TEXTURE_FILES.length) {
+                callback(); 
+            }
+        };
+        // Error handling jika gambar tidak ditemukan
+        img.onerror = () => {
+            console.error("Gagal memuat texture:", src);
+            alert("Texture " + src + " tidak ditemukan! Pastikan folder img dan file png sudah dibuat.");
+        };
+        textures[index] = img;
     });
 }
 
@@ -64,20 +67,27 @@ class Gem {
         this.c = c;
         this.r = r;
         this.type = type;
-        // Koordinat visual (x, y) untuk animasi
+        // Koordinat visual (x, y) untuk animasi posisi
         this.x = c * CELL_SIZE;
         this.y = r * CELL_SIZE;
+        
         // Koordinat target (kemana dia harus bergerak)
         this.targetX = this.x;
         this.targetY = this.y;
+        
         this.isMatch = false;
         this.alpha = 1; // Transparansi
         this.grayscale = false; // Flag untuk efek citra
+        
+        // [GRAFIKOM] ANIMATION PROPERTIES
+        // Menambahkan properti sudut untuk transformasi rotasi
+        this.angle = 0; 
+        this.rotSpeed = (Math.random() * 0.005) + 0.002; // Kecepatan putar acak
     }
 
-    // [GRAFIKOM] UPDATE DENGAN LERP (LINEAR INTERPOLATION)
-    // Rumus: Current = Current + (Target - Current) * speed
+    // [GRAFIKOM] UPDATE PHYSICS & ANIMATION
     update() {
+        // 1. Animasi Translasi (Perpindahan Posisi Linear Interpolation)
         if (Math.abs(this.targetX - this.x) > 1) {
             this.x += (this.targetX - this.x) * ANIMATION_SPEED;
         } else {
@@ -89,17 +99,23 @@ class Gem {
         } else {
             this.y = this.targetY;
         }
+
+        // 2. Animasi Rotasi (Geometric Transformation)
+        // Permata berputar terus menerus jika tidak sedang dalam efek grayscale
+        if (!this.grayscale) {
+            this.angle += this.rotSpeed;
+            if (this.angle > Math.PI * 2) this.angle = 0;
+        }
     }
 }
 
 // --- INISIALISASI ---
 function init() {
-    createGemAssets();
     // Isi Grid
     for (let c = 0; c < COLS; c++) {
         grid[c] = [];
         for (let r = 0; r < ROWS; r++) {
-            grid[c][r] = new Gem(c, r, Math.floor(Math.random() * COLORS.length));
+            grid[c][r] = new Gem(c, r, Math.floor(Math.random() * TEXTURE_FILES.length));
         }
     }
     resolveMatches(); // Pastikan tidak ada match awal
@@ -111,7 +127,7 @@ function resolveMatches() {
     let matches = findMatches();
     while (matches.length > 0) {
         matches.forEach(g => {
-            grid[g.c][g.r].type = Math.floor(Math.random() * COLORS.length);
+            grid[g.c][g.r].type = Math.floor(Math.random() * TEXTURE_FILES.length);
         });
         matches = findMatches();
     }
@@ -124,9 +140,9 @@ function loop() {
         draw();
         
         // Logika Timer
-        timeLeft -= 1/60; // Asumsi berjalan di 60fps (kurangi ~0.016s per frame)
+        timeLeft -= 1/60; // Asumsi berjalan di 60fps
         
-        // Update UI HTML (Pastikan ada elemen <span id="timer"> di HTML)
+        // Update UI HTML
         const timerEl = document.getElementById('timer');
         if(timerEl) timerEl.innerText = Math.ceil(timeLeft);
 
@@ -140,13 +156,13 @@ function loop() {
 function triggerGameOver() {
     isGameOver = true;
 
-    // 1. Gambar frame terakhir agar tidak blank
+    // 1. Gambar frame terakhir
     draw(); 
 
     // 2. [PENGOLAHAN CITRA] Terapkan Filter Sepia ke seluruh layar
     applySepiaFilter();
 
-    // 3. [GRAFIKOM] Rendering Text UI di Canvas
+    // 3. Render Text UI
     ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
     ctx.fillRect(0, canvas.height/2 - 70, canvas.width, 140);
     
@@ -191,8 +207,7 @@ function draw() {
     // 1. Clear Screen
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // 2. Draw Grid Background (Checkerboard pattern)
-    // Menunjukkan pemahaman koordinat 2D
+    // 2. Draw Grid Background
     for (let c = 0; c < COLS; c++) {
         for (let r = 0; r < ROWS; r++) {
             ctx.fillStyle = (c + r) % 2 === 0 ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.1)';
@@ -200,26 +215,45 @@ function draw() {
         }
     }
 
-    // 3. Draw Gems
+    // 3. Draw Gems (Texture Mapping & Transformations)
     for (let c = 0; c < COLS; c++) {
         for (let r = 0; r < ROWS; r++) {
             const gem = grid[c][r];
-            if (gem.type === -1) continue; // Kosong
+            if (gem.type === -1) continue; 
 
-            // Jika sedang proses hancur (grayscale), gambar canvas khusus
+            // Save state canvas sebelum transformasi
+            ctx.save();
+
+            // [GRAFIKOM] TRANSFORMASI GEOMETRI
+            // Pindahkan titik pusat (pivot) ke tengah sel grid untuk rotasi
+            const centerX = gem.x + CELL_SIZE / 2;
+            const centerY = gem.y + CELL_SIZE / 2;
+            ctx.translate(centerX, centerY);
+            
+            // Lakukan Rotasi sesuai properti animasi
+            ctx.rotate(gem.angle);
+
+            // [GRAFIKOM] TEXTURE MAPPING
+            // Menggambar image texture pada koordinat relatif terhadap pivot (-half, -half)
+            // Jika dalam mode grayscale (match), kita gambar dulu lalu filter
             if (gem.grayscale) {
-                // Gambar asset normal dulu
-                ctx.drawImage(assets[gem.type], gem.x, gem.y);
-                // Lalu timpa dengan efek filter
+                // Gambar texture normal
+                ctx.drawImage(textures[gem.type], -CELL_SIZE/2, -CELL_SIZE/2, CELL_SIZE, CELL_SIZE);
+                
+                // Restore dulu agar filter grayscale diterapkan pada posisi absolut layar
+                ctx.restore(); 
                 applyGrayscaleFilter(gem.x, gem.y, CELL_SIZE, CELL_SIZE);
             } else {
-                // Gambar normal
+                // Rendering Normal dengan Alpha & Texture
                 ctx.globalAlpha = gem.alpha;
-                ctx.drawImage(assets[gem.type], gem.x, gem.y);
+                ctx.drawImage(textures[gem.type], -CELL_SIZE/2, -CELL_SIZE/2, CELL_SIZE, CELL_SIZE);
                 ctx.globalAlpha = 1.0;
+                
+                // Restore state canvas (menghapus rotasi/translasi untuk objek berikutnya)
+                ctx.restore();
             }
 
-            // Highlight selection
+            // Highlight selection (Gambar kotak di posisi absolut, tidak ikut berputar)
             if (selectedGem && selectedGem.c === c && selectedGem.r === r) {
                 ctx.strokeStyle = 'white';
                 ctx.lineWidth = 3;
@@ -230,7 +264,8 @@ function draw() {
     
     // 4. Draw Particles
     particles.forEach(p => {
-        ctx.fillStyle = p.color;
+        // Ambil warna dari partikel (bisa disesuaikan hardcode warna jika perlu)
+        ctx.fillStyle = p.color; 
         ctx.globalAlpha = p.life;
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
@@ -300,7 +335,8 @@ function handleMatches() {
             
             // Hapus & Spawn Partikel
             matches.forEach(g => {
-                spawnParticles(g.x + CELL_SIZE/2, g.y + CELL_SIZE/2, COLORS[g.type]);
+                // Warna partikel disesuaikan (putih/gold karena tekstur bisa berwarna-warni)
+                spawnParticles(g.x + CELL_SIZE/2, g.y + CELL_SIZE/2, '#FFD700');
                 grid[g.c][g.r].type = -1; // Kosongkan
                 grid[g.c][g.r].grayscale = false;
             });
@@ -362,7 +398,7 @@ function applyGravity() {
         }
         // Isi yang kosong di atas dengan baru
         for (let r = 0; r < emptyCount; r++) {
-            grid[c][r].type = Math.floor(Math.random() * COLORS.length);
+            grid[c][r].type = Math.floor(Math.random() * TEXTURE_FILES.length);
             grid[c][r].y = -CELL_SIZE * (emptyCount - r); // Mulai dari atas layar
             grid[c][r].targetY = r * CELL_SIZE;
         }
@@ -417,7 +453,7 @@ function doSwap(pos1, pos2) {
     grid[pos1.c][pos1.r].type = grid[pos2.c][pos2.r].type;
     grid[pos2.c][pos2.r].type = tempType;
 
-    // Trigger animasi visual (Grafikom: menukar visual)
+    // Trigger animasi visual 
     // Sebenarnya di update() akan otomatis bergerak karena target type berubah
     
     // Cek match setelah swap
@@ -434,5 +470,7 @@ function doSwap(pos1, pos2) {
     }, 250);
 }
 
-// Start
-init();
+// Start dengan meload texture terlebih dahulu
+loadTextures(() => {
+    init();
+});
